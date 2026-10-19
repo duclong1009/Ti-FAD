@@ -3,7 +3,7 @@ train_split: ['validation']
 val_split: ['test']
 dataset: {
   json_file: ./data/thumos/annotations/thumos14.json,
-  feat_folder: ./data/thumos14/i3d_features,
+  feat_folder: ./data/thumos/i3d_features,
   subset_file: 'splits/train_{r1}_test_{r2}/THUMOS14/{mode}/split_{r3}.list',
   file_prefix: ~,
   file_ext: .npy,

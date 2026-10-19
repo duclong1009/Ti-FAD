@@ -262,6 +262,7 @@ def train_one_epoch(
 ):
     """Training the model for one epoch"""
     # set up meters
+    # model = model.to('cpu')
     batch_time = AverageMeter()
     losses_tracker = {}
     # number of iterations per epoch

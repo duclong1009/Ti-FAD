@@ -1,0 +1,1 @@
+python eval.py ./configs/anet_i3d.yaml ./ckpt/anet_i3d_<data_split>_<num_split>/ --n <num_split>

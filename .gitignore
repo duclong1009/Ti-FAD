@@ -1,0 +1,11 @@
+**.__pycache__**
+data/
+logs/
+ckpt/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+*.pywz
+*.pyzw
