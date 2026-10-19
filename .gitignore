@@ -9,3 +9,4 @@ ckpt/
 *.pyz
 *.pywz
 *.pyzw*.tar.gz
+Processing ./*.tar.gz
