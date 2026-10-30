@@ -1,4 +1,5 @@
 import yaml
+import torch
 
 
 DEFAULTS = {
@@ -156,6 +157,9 @@ def _update_config(config):
     config["model"]["max_seq_len"] = config["dataset"]["max_seq_len"]
     config["model"]["train_cfg"] = config["train_cfg"]
     config["model"]["test_cfg"] = config["test_cfg"]
+    # fall back to cpu if no gpu is available
+    if not torch.cuda.is_available():
+        config["devices"] = ['cpu']
     return config
 
 def load_config(config_file, defaults=DEFAULTS):

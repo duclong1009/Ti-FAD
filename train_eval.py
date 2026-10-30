@@ -58,7 +58,7 @@ def main(args):
     # tb_writer = SummaryWriter(os.path.join(ckpt_folder, 'logs'))
 
     # fix the random seeds (this will fix everything)
-    rng_generator = fix_random_seed(cfg['init_rand_seed'], include_cuda=True)
+    rng_generator = fix_random_seed(cfg['init_rand_seed'], include_cuda=torch.cuda.is_available())
 
     # re-scale learning rate / # workers based on number of GPUs
     cfg['opt']["learning_rate"] *= len(cfg['devices'])
@@ -106,7 +106,11 @@ def main(args):
                            )
     
     # not ideal for multi GPU training, ok for now
-    model = nn.DataParallel(model, device_ids=cfg['devices'])
+    if torch.cuda.is_available():
+        model = nn.DataParallel(model, device_ids=cfg['devices'])
+    else:
+        # wrap anyway on cpu to keep the 'module.' prefix in state dicts
+        model = nn.DataParallel(model)
     
     # optimizer
     optimizer = make_optimizer(model.module, cfg['opt'])
@@ -125,8 +129,7 @@ def main(args):
         if os.path.isfile(args.resume):
             # load ckpt, reset epoch / best rmse
             checkpoint = torch.load(args.resume,
-                map_location = lambda storage, loc: storage.cuda(
-                    cfg['devices'][0]))
+                map_location = cfg['devices'][0])
             args.start_epoch = checkpoint['epoch'] + 1
             model.load_state_dict(checkpoint['state_dict'])
             model_ema.module.load_state_dict(checkpoint['state_dict_ema'])

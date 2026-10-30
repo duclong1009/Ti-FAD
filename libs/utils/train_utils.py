@@ -302,7 +302,8 @@ def train_one_epoch(
         # if (iter_idx != 0) and (iter_idx % print_freq) == 0:
         if iter_idx % print_freq == 0:
             # measure elapsed time (sync all kernels)
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             batch_time.update((time.time() - start) / print_freq)
             start = time.time()
 
@@ -424,7 +425,8 @@ def valid_one_epoch(
         # printing
         if (iter_idx != 0) and iter_idx % (print_freq) == 0:
             # measure elapsed time (sync all kernels)
-            torch.cuda.synchronize()
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
             batch_time.update((time.time() - start) / print_freq)
             start = time.time()
 

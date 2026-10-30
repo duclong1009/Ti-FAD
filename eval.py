@@ -44,7 +44,7 @@ def main(args):
 
     """1. fix all randomness"""
     # fix the random seeds (this will fix everything)
-    _ = fix_random_seed(cfg['init_rand_seed'], include_cuda=True)
+    _ = fix_random_seed(cfg['init_rand_seed'], include_cuda=torch.cuda.is_available())
 
     """2. create dataset / dataloader"""
     val_dataset = make_dataset(
@@ -72,7 +72,11 @@ def main(args):
                            )
    
     # not ideal for multi GPU training, ok for now
-    model = nn.DataParallel(model, device_ids=cfg['devices'])
+    if torch.cuda.is_available():
+        model = nn.DataParallel(model, device_ids=cfg['devices'])
+    else:
+        # wrap anyway on cpu to keep the 'module.' prefix in state dicts
+        model = nn.DataParallel(model)
     # model_ema = ModelEma(model)
 
     """4. load ckpt"""
@@ -80,7 +84,7 @@ def main(args):
     # load ckpt, reset epoch / best rmse
     checkpoint = torch.load(
         ckpt_file,
-        map_location = lambda storage, loc: storage.cuda(cfg['devices'][0])
+        map_location = cfg['devices'][0]
     )
 
     model.load_state_dict(checkpoint['state_dict'], strict=True)  
