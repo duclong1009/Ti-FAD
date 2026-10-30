@@ -38,6 +38,7 @@ class ActivityNetDataset(Dataset):
         feature_type="",   # feature_type of data
     ):
         # file path
+        # breakpoint( )
         assert os.path.exists(feat_folder) and os.path.exists(json_file)
         assert isinstance(split, tuple) or isinstance(split, list)
         assert crop_ratio == None or len(crop_ratio) == 2

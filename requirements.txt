@@ -1,6 +1,6 @@
 numpy==1.23.0 
 tensorflow 
-tensorboard 
+wandb
 h5py 
 pandas 
 joblib 

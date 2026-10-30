@@ -4,7 +4,9 @@ from transformers import CLIPTokenizer  # pip install transformers==4.19.2
 from .clip import CLIPModel
 
 def data_split_dir(file, data_split, mode, split_num):
+        # breakpoint()
         if mode == 'train':
+            
             file_dir = file.format(mode='train',r1=data_split, r2=100-data_split, r3=split_num)
         else:
             file_dir = file.format(mode='test',r1=data_split, r2=100-data_split, r3=split_num)

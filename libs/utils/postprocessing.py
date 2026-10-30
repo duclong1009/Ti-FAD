@@ -55,6 +55,19 @@ def results_to_dict(results):
         
     return results_dict
 
+def build_class_name_to_idx(json_file):
+    with open(json_file, "rt") as f:
+        database = json.load(f)["database"]
+
+    class_name_to_idx = {}
+    for vid, info in database.items():
+        for ann in info["annotations"]:
+            class_name_to_idx[ann["label"]] = ann["label_id"]
+
+    # sắp theo label_id để tạo danh sách tên lớp đúng thứ tự
+    class_name_to_idx = dict(sorted(class_name_to_idx.items(), key=lambda x: x[1]))
+    full_class_names = list(class_name_to_idx.keys())
+    return class_name_to_idx, full_class_names
 
 def results_to_array(results):
     # video ids and allocate the dict
@@ -115,8 +128,8 @@ def postprocess_results(results, cls_score_file, prior_prob=0.15, num_pred=200, 
         }
     else:
         cls_scores = load_results_from_pkl(cls_score_file)
+        class_name_to_idx, full_class_names = build_class_name_to_idx("data/thumos/annotations/thumos14.json")    # dict for processed results
     
-    # dict for processed results
     processed_results = {
         'video-id': [],
         't-start' : [],
@@ -129,6 +142,7 @@ def postprocess_results(results, cls_score_file, prior_prob=0.15, num_pred=200, 
     for i, (vid, result) in enumerate(results.items()):
         # pick top k cls scores and idx
         curr_cls_scores = np.asarray(cls_scores[vid])
+        # breakpoint()
         class_indices = np.asarray([class_name_to_idx[name] for name in class_names[i]])
         # class_indices = np.asarray([ 0,  2,  3,  9, 10, 11, 14, 16, 17, 18])   # split 0
         # import ipdb; ipdb.set_trace()

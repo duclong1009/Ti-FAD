@@ -323,7 +323,7 @@ class ANETdetection(object):
         recall_at_n = self.compute_recall_at_n(self.ground_truth, preds, n, self.tiou_thresholds)
         return recall_at_n
 
-    def evaluate(self, preds, verbose=True):
+    def detailed_evaluate(self, preds, verbose=True):
         """Evaluates a prediction file. For the detection task we measure the
         interpolated mean average precision to measure the performance of a
         method.
@@ -331,6 +331,66 @@ class ANETdetection(object):
         or (3) a python dict item with numpy arrays as the values
         """
 
+        if isinstance(preds, pd.DataFrame):
+            assert 'label' in preds
+        elif isinstance(preds, str) and os.path.isfile(preds):
+            preds = load_pred_seg_from_json(preds)
+        elif isinstance(preds, Dict):
+            # move to pd dataframe
+            # did not check dtype here, can accept both numpy / pytorch tensors
+            preds = pd.DataFrame({
+                'video-id' : preds['video-id'],
+                't-start' : preds['t-start'].tolist(),
+                't-end': preds['t-end'].tolist(),
+                'label': preds['label'].tolist(),
+                'score': preds['score'].tolist()
+            })
+        # always reset ap
+        self.ap = None
+
+        # make the label ids consistent
+        preds['label'] = preds['label'].replace(self.activity_index)
+
+        # compute mAP
+        self.ap = self.wrapper_compute_average_precision(preds)
+        mAP = self.ap.mean(axis=1)
+        average_mAP = mAP.mean()
+        
+        # Compute AR@AN
+        average_AR_5 = self.wrapper_compute_recall_at_n(preds, 5).mean()
+        average_AR_10 = self.wrapper_compute_recall_at_n(preds, 10).mean()
+        average_AR_20 = self.wrapper_compute_recall_at_n(preds, 20).mean()
+        average_AR_30 = self.wrapper_compute_recall_at_n(preds, 30).mean()
+
+        tiou_index = np.where(np.isclose(self.tiou_thresholds, 0.5))[0][0]  # Get index of tIoU = 0.5
+        class_wise_ap = self.ap[tiou_index, :]  # AP values for each class at tIoU = 0.5
+
+
+        # print results
+        if verbose:
+            # print the results
+            print('[RESULTS] Action detection results on {:s}.'.format(
+                self.dataset_name)
+            )
+            block = ''
+            tiou_mAP_list = []
+            for tiou, tiou_mAP in zip(self.tiou_thresholds, mAP):
+                block += '\n|tIoU = {:.2f}: mAP = {:.2f} (%)'.format(tiou, tiou_mAP*100)
+                tiou_mAP_list.append(round(tiou_mAP*100, 1))
+            print(block)
+            print('Avearge mAP: {:.2f} (%)'.format(average_mAP*100))
+        
+        return mAP, average_mAP, tiou_mAP_list
+
+
+    def evaluate(self, preds, verbose=True):
+        """Evaluates a prediction file. For the detection task we measure the
+        interpolated mean average precision to measure the performance of a
+        method.
+        preds can be (1) a pd.DataFrame; or (2) a json file where the data will be loaded;
+        or (3) a python dict item with numpy arrays as the values
+        """
+        breakpoint()
         if isinstance(preds, pd.DataFrame):
             assert 'label' in preds
         elif isinstance(preds, str) and os.path.isfile(preds):
@@ -454,8 +514,8 @@ def compute_average_precision_detection(
             if fp[tidx, idx] == 0 and tp[tidx, idx] == 0:
                 fp[tidx, idx] = 1
 
-    tp_cumsum = np.cumsum(tp, axis=1).astype(np.float)
-    fp_cumsum = np.cumsum(fp, axis=1).astype(np.float)
+    tp_cumsum = np.cumsum(tp, axis=1).astype(np.float64)
+    fp_cumsum = np.cumsum(fp, axis=1).astype(np.float64)
     recall_cumsum = tp_cumsum / npos
     precision_cumsum = tp_cumsum / (tp_cumsum + fp_cumsum)
 

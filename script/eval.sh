@@ -1,1 +1,2 @@
-python eval.py ./configs/anet_i3d.yaml ./ckpt/anet_i3d_<data_split>_<num_split>/ --n <num_split>
+python eval.py ./configs/thumos14_i3d.yaml ./ckpt/thumos14_i3d_test_model_2 --n 2
+

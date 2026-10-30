@@ -14,6 +14,7 @@ from .lr_schedulers import LinearWarmupCosineAnnealingLR, LinearWarmupMultiStepL
 from .postprocessing import postprocess_results
 
 import time
+import wandb
 from thop import profile
 # from torch.cuda.amp import autocast, GradScaler
 import json
@@ -257,7 +258,6 @@ def train_one_epoch(
     # scaler,                     
     model_ema = None,
     clip_grad_l2norm = -1,
-    tb_writer = None,
     print_freq = 20
 ):
     """Training the model for one epoch"""
@@ -314,32 +314,17 @@ def train_one_epoch(
                 # update
                 losses_tracker[key].update(value.item())
 
-            # log to tensor board
             lr = scheduler.get_last_lr()[0]
-            global_step = curr_epoch * num_iters + iter_idx
-            if tb_writer is not None:
-                # learning rate (after stepping)
-                tb_writer.add_scalar(
-                    'train/learning_rate',
-                    lr,
-                    global_step
-                )
-                # all losses
-                tag_dict = {}
+            if wandb.run is not None:
+                log_dict = {
+                    "epoch": curr_epoch,
+                    "train/learning_rate": lr,
+                    "train/final_loss": losses_tracker["final_loss"].val,
+                }
                 for key, value in losses_tracker.items():
                     if key != "final_loss":
-                        tag_dict[key] = value.val
-                tb_writer.add_scalars(
-                    'train/all_losses',
-                    tag_dict,
-                    global_step
-                )
-                # final loss
-                tb_writer.add_scalar(
-                    'train/final_loss',
-                    losses_tracker['final_loss'].val,
-                    global_step
-                )
+                        log_dict[f"train/{key}"] = value.val
+                wandb.log(log_dict)
 
             # print to terminal
             block1 = 'Epoch: [{:03d}][{:05d}/{:05d}]'.format(
@@ -375,7 +360,6 @@ def valid_one_epoch(
     ext_score_file = None,
     evaluator = None,
     output_file = None,
-    tb_writer = None,
     print_freq = 20,
     # label_to_name = {},
     prior_prob = 0.15,
@@ -432,14 +416,14 @@ def valid_one_epoch(
             print('Test: [{0:05d}/{1:05d}]\t'
                   'Time {batch_time.val:.2f} ({batch_time.avg:.2f})'.format(
                   iter_idx, len(val_loader), batch_time=batch_time))
-
+    # breakpoint()
     # gather all stats and evaluate
     results['t-start'] = torch.cat(results['t-start']).numpy()
     results['t-end'] = torch.cat(results['t-end']).numpy()
     results['label'] = torch.cat(results['label']).numpy()
     results['score'] = torch.cat(results['score']).numpy()
 
-    
+    # breakpoint()
     if evaluator is not None:
         if (ext_score_file is not None) and isinstance(ext_score_file, str):
             results = postprocess_results(results, ext_score_file, prior_prob, num_pred)
@@ -452,9 +436,16 @@ def valid_one_epoch(
         with open(output_file, "wb") as f:
             pickle.dump(results, f)
         mAP = 0.0
+        tiou_mAP_list = []
 
-    # log mAP to tb_writer
-    if tb_writer is not None:
-        tb_writer.add_scalar('validation/mAP', mAP, curr_epoch)
+    if wandb.run is not None:
+        log_dict = {
+            "epoch": curr_epoch,
+            "validation/mAP": mAP * 100,
+        }
+        if evaluator is not None:
+            for tiou, tiou_mAP in zip(evaluator.tiou_thresholds, tiou_mAP_list):
+                log_dict[f"validation/mAP@tIoU={tiou:.2f}"] = tiou_mAP
+        wandb.log(log_dict)
 
     return mAP, tiou_mAP_list

@@ -47,10 +47,11 @@ def main(args):
     _ = fix_random_seed(cfg['init_rand_seed'], include_cuda=True)
 
     """2. create dataset / dataloader"""
+    # breakpoint()
     val_dataset = make_dataset(
         cfg['dataset_name'], args.n, False, cfg['val_split'], **cfg['dataset']
     )
-
+    # breakpoint()
     label_dict = val_dataset.label_dict
     label_to_name = {
         v: k
@@ -80,7 +81,7 @@ def main(args):
     # load ckpt, reset epoch / best rmse
     checkpoint = torch.load(
         ckpt_file,
-        map_location = lambda storage, loc: storage.cuda(cfg['devices'][0])
+        map_location=cfg['devices'][0],
     )
 
     model.load_state_dict(checkpoint['state_dict'], strict=True)  
@@ -114,7 +115,6 @@ def main(args):
             evaluator=det_eval,
             output_file=None,
             ext_score_file=cfg['test_cfg']['ext_score_file'],
-            tb_writer=None,
             print_freq=args.print_freq,
             prior_prob=cfg['opt']['prior_prob'],
             num_pred=cfg['opt']['num_pred']

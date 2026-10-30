@@ -1,7 +1,7 @@
 ninja_required_version = 1.3
-cxx = c++
+cxx = g++
 
-cflags = -pthread -B /opt/conda/compiler_compat -DNDEBUG -fwrapv -O2 -Wall -fPIC -O2 -isystem /opt/conda/include -fPIC -O2 -isystem /opt/conda/include -fPIC -I/opt/conda/lib/python3.11/site-packages/torch/include -I/opt/conda/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/opt/conda/lib/python3.11/site-packages/torch/include/TH -I/opt/conda/lib/python3.11/site-packages/torch/include/THC -I/opt/conda/include/python3.11 -c
+cflags = -pthread -B /mnt/disk1/miniconda3/envs/hantn1/compiler_compat -DNDEBUG -fwrapv -O2 -Wall -fPIC -O2 -isystem /mnt/disk1/miniconda3/envs/hantn1/include -fPIC -O2 -isystem /mnt/disk1/miniconda3/envs/hantn1/include -fPIC -I/mnt/disk1/miniconda3/envs/hantn1/lib/python3.11/site-packages/torch/include -I/mnt/disk1/miniconda3/envs/hantn1/lib/python3.11/site-packages/torch/include/torch/csrc/api/include -I/mnt/disk1/miniconda3/envs/hantn1/lib/python3.11/site-packages/torch/include/TH -I/mnt/disk1/miniconda3/envs/hantn1/lib/python3.11/site-packages/torch/include/THC -I/mnt/disk1/miniconda3/envs/hantn1/include/python3.11 -c
 post_cflags = -fopenmp -DTORCH_API_INCLUDE_EXTENSION_H '-DPYBIND11_COMPILER_TYPE="_gcc"' '-DPYBIND11_STDLIB="_libstdcpp"' '-DPYBIND11_BUILD_ABI="_cxxabi1011"' -DTORCH_EXTENSION_NAME=nms_1d_cpu -D_GLIBCXX_USE_CXX11_ABI=0 -std=c++17
 cuda_dlink_post_cflags = 
 ldflags = 
@@ -15,7 +15,7 @@ rule compile
 
 
 
-build /workspace/neurips/cmb_zero/libs/utils/build/temp.linux-x86_64-cpython-311/./csrc/nms_cpu.o: compile /workspace/neurips/cmb_zero/libs/utils/csrc/nms_cpu.cpp
+build /mnt/disk4/longnd/repo/Ti-FAD/libs/utils/build/temp.linux-x86_64-cpython-311/./csrc/nms_cpu.o: compile /mnt/disk4/longnd/repo/Ti-FAD/libs/utils/csrc/nms_cpu.cpp
 
 
 

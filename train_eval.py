@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.utils.data
 
 # for visualization
-from torch.utils.tensorboard import SummaryWriter
+import wandb
 
 # our code
 from libs.core import load_config
@@ -54,8 +54,6 @@ def main(args):
             cfg['output_folder'], cfg_filename + '_' + str(args.output) + '_' + str(args.n))
     if not os.path.exists(ckpt_folder):
         os.mkdir(ckpt_folder)
-    # tensorboard writer
-    # tb_writer = SummaryWriter(os.path.join(ckpt_folder, 'logs'))
 
     # fix the random seeds (this will fix everything)
     rng_generator = fix_random_seed(cfg['init_rand_seed'], include_cuda=True)
@@ -124,9 +122,10 @@ def main(args):
     if args.resume:
         if os.path.isfile(args.resume):
             # load ckpt, reset epoch / best rmse
-            checkpoint = torch.load(args.resume,
-                map_location = lambda storage, loc: storage.cuda(
-                    cfg['devices'][0]))
+            checkpoint = torch.load(
+                args.resume,
+                map_location=cfg['devices'][0],
+            )
             args.start_epoch = checkpoint['epoch'] + 1
             model.load_state_dict(checkpoint['state_dict'])
             model_ema.module.load_state_dict(checkpoint['state_dict_ema'])
@@ -145,6 +144,15 @@ def main(args):
     with open(os.path.join(ckpt_folder, 'config.txt'), 'w') as fid:
         pprint(cfg, stream=fid)
         fid.flush()
+    wandb.login(key='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')
+    wandb.init(
+        project=os.environ.get("WANDB_PROJECT", "Ti-FAD"),
+        entity="aiotlab",
+        name=os.path.basename(ckpt_folder),
+        config=cfg,
+        # dir=ckpt_folder,
+        tags=[cfg['dataset_name'], cfg['model_name'], f"split-{args.n}"],
+    )
 
     """4. training / validation loop"""
     print("\nStart training model {:s} ...".format(cfg['model_name']))
@@ -169,7 +177,6 @@ def main(args):
             # scaler,
             model_ema = model_ema,
             clip_grad_l2norm = cfg['train_cfg']['clip_grad_l2norm'],
-            tb_writer=None,
             print_freq=args.print_freq
         )
 
@@ -179,11 +186,10 @@ def main(args):
             mAP, tiou_mAP_list = valid_one_epoch(
                 val_loader,
                 model,
-                -1,
+                epoch,
                 evaluator=det_eval,
                 output_file=None,
                 ext_score_file=cfg['test_cfg']['ext_score_file'],
-                tb_writer=None,
                 print_freq=args.print_freq,
                 # label_to_name=label_to_name
                 prior_prob=cfg['opt']['prior_prob'],
@@ -207,6 +213,8 @@ def main(args):
                 )
                 mAP_best = mAP
                 tiou_mAP_list_best = tiou_mAP_list
+                wandb.run.summary["validation/mAP_best"] = mAP_best * 100
+                wandb.run.summary["validation/tiou_mAP_best"] = tiou_mAP_list_best
 
     print("mAP_list=", mAP_list)
     print("max(mAP_list)", max(mAP_list))
@@ -218,7 +226,7 @@ def main(args):
         fobj.write(f'{max(mAP_list), tiou_mAP_list_best}\n')
             
     # wrap up
-    # tb_writer.close()
+    wandb.finish()
     print("All done!")
     return
 

@@ -10,3 +10,4 @@ ckpt/
 *.pywz
 *.pyzw*.tar.gz
 Processing ./*.tar.gz
+wandb/
